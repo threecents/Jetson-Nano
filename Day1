@@ -1,0 +1,10 @@
+如何在Jetson Nano上安装镜像
+1.下载镜像
+.Jetson Download Center(需要翻墙)
+https://developer.nvidia.com/embedded/downloads
+##官方下载地址 可选择NX和nano
+## https://developer.nvidia.com/zh-cn/embedded/downloads#?search=Jetson%20Xavier%20NX%20Developer%20Kit%20User%20Guide
+.点击DOWNLOADS那个链接即可开始下载。目前4.5.1是jetpack最新版本，如果需要其它版本下面也有，按需下载即可。由于我不是NX系列的，
+所以选择的是左边中间那个下载。如果一直下不下来你可以选择复制下载链接去迅雷下载(速度很慢但是可以行得通)。
+下载好了之后就可以开始烧录镜像(这里需要准备一个SD卡(这个卡应该先格式化哟)，用于烧录)，
+格式化的软件为SD Card Formatter: https://www.sdcard.org/downloads/formatter/
