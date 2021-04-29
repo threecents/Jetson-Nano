@@ -1,0 +1,134 @@
+如何在Jetson Nano上安装镜像
+1.下载镜像
+.Jetson Download Center(需要翻墙)
+https://developer.nvidia.com/embedded/downloads
+##官方下载地址 可选择NX和nano
+## https://developer.nvidia.com/zh-cn/embedded/downloads#?search=Jetson%20Xavier%20NX%20Developer%20Kit%20User%20Guide
+.点击DOWNLOADS那个链接即可开始下载。目前4.5.1是jetpack最新版本，如果需要其它版本下面也有，按需下载即可。由于我不是NX系列的，
+所以选择的是左边中间那个下载。如果一直下不下来你可以选择复制下载链接去迅雷下载(速度很慢但是可以行得通)。
+下载好了之后就可以开始烧录镜像(这里需要准备一个SD卡(这个卡应该先格式化哟)，用于烧录)，
+格式化的软件为SD Card Formatter: https://www.sdcard.org/downloads/formatter/
+
+2.烧录镜像
+.下载，安装并启动Etcher.
+.我选择的是第一个.下载好了之后就可以打开，打开之后的界面如下.
+.单击“选择图像”，然后选择较早下载的压缩镜像文件(如果找不到就改一下后缀即可)。
+.插入您的microSD卡。如果没有连接其他外部驱动器，则Etcher将自动选择microSD卡作为目标设备。否则，请单击“更改”并选择正确的设备。
+.然后点击Flash开始烧录镜像！Wait 20mintus approximately。
+
+3.开启Jetson Nano4.
+
+4.开机设置
+4.1散热风扇控制
+一开始风扇是不会自己转的，需要自己设置，255是最大转速，可以根据需要自己调整。
+sudo sh -c 'echo 255 > /sys/devices/pwm-fan/target_pwm'  
+创建/etc/rc.local（18.04没有rc.local），并添加如下内容:
+#!/bin/bash
+sleep 10
+sudo /usr/bin/jetson_clocks
+sudo sh -c 'echo 255 > /sys/devices/pwm-fan/target_pwm'
+添加rc.local可执行权限
+sudo chmod 755 /etc/rc.local
+下一步重启Jetson
+sudo reboot
+
+4.2 Chinese语言包
+.先找到system setting 点击language support 点击install/remove languages 选中 Chinese(simplified)安装，
+.安装好了之后就可以执行下面操作,安装ibus框架，在Terminal中输入：
+sudo apt-get install ibus ibus-clutter ibus-gtk ibus-gtk3 ibus-qt4
+.切换到ibus框架下：
+im-config -s ibus
+.安装拼音引擎：
+sudo apt-get install ibus-pinyin
+.调出ibus Preference来添加该拼音输入法：
+sudo ibus-setup
+Finally!在弹出的对话框中添加Chinese-Pinyin输入法就OK啦~
+系统输入法设置:在System Settings–>Text Entry中添加上Chinses(Pinyin)IBus拼音输入法，
+并将Show current input source in the menu bar勾选上，这样就会在系统的菜单条上显示输入法切换的图标了。如果没找到重启一下就有了
+
+4.3 pip安装与切换软件源
+
+https://mirrors.tuna.tsinghua.edu.cn/help/pypi/
+
+由于ubuntu默认的软件源是国外的源，下载速度非常慢，而且经常链接中断，非常不稳定。
+so,we have to change the source of software to install environment.please follow me.
+.First,we will cope the original file：
+sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+.Then,open the file
+sudo gedit /etc/apt/sources.list
+.Addition the source of software.
+#Ubuntu 官方源 
+deb http://archive.ubuntu.com/ubuntu/ gutsy main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ gutsy-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ gutsy-updates main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ gutsy-proposed main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ gutsy-backports main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu/ gutsy main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu/ gutsy-security main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu/ gutsy-updates main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu/ gutsy-proposed main restricted universe multiverse
+deb-src http://archive.ubuntu.com/ubuntu/ gutsy-backports main restricted universe multiverse
+
+#阿里云
+deb http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse
+
+#网易163
+deb http://mirrors.163.com/ubuntu/ trusty main restricted universe multiverse
+deb http://mirrors.163.com/ubuntu/ trusty-security main restricted universe multiverse
+deb http://mirrors.163.com/ubuntu/ trusty-updates main restricted universe multiverse
+deb http://mirrors.163.com/ubuntu/ trusty-proposed main restricted universe multiverse
+deb http://mirrors.163.com/ubuntu/ trusty-backports main restricted universe multiverse
+deb-src http://mirrors.163.com/ubuntu/ trusty main restricted universe multiverse
+deb-src http://mirrors.163.com/ubuntu/ trusty-security main restricted universe multiverse
+deb-src http://mirrors.163.com/ubuntu/ trusty-updates main restricted universe multiverse
+deb-src http://mirrors.163.com/ubuntu/ trusty-proposed main restricted universe multiverse
+deb-src http://mirrors.163.com/ubuntu/ trusty-backports main restricted universe multiverse
+
+#中科大
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic-updates main restricted
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic universe
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic-updates universe
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic-updates multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic-backports main restricted universe multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic-security main restricted
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic-security universe
+deb http://mirrors.ustc.edu.cn/ubuntu-ports/ bionic-security multiverse
+deb http://archive.ubuntu.org.cn/ubuntu-cn/ feisty main restricted universe multiverse
+
+.Update the file
+sudo apt-get update
+sudo apt-get dist-upgrade
+sudo apt-get upgrade
+
+4.4 安装pip3
+sudo apt-get install libhdf5-serial-dev hdf5-tools zlib1g-dev zip libjpeg8-dev libhdf5-dev  python3-pip
+.install other fundamental environment
+pip3 install -U numpy
+pip3 install -U h5py
+pip3 install -U grpcio absl-py py-cpuinfo psutil portpicker grpcio six mock requests gast astor termcolor
+
+4.5 安装torch2trt
+git clone git://github.com/NVIDIA-AI-IOT/torch2trt
+cd torch2trt
+sudo -s
+python setup.py install
+
+4.6 安装CUDA
+.jetson nano默认已经安装了CUDA10.2，但是直接运行 nvcc -V是不会成功的，需要你把CUDA的路径写入环境变量中。
+sudo gedit  ~/.bashrc
+.在最后添加
+export CUBA_HOME=/usr/local/cuda-10.2
+export LD_LIBRARY_PATH=/usr/local/cuda-10.2/lib64:$LD_LIBRARY_PATH
+export PATH=/usr/local/cuda-10.2/bin:$PATH
+.然后保存退出
+source ~/.bashrc
