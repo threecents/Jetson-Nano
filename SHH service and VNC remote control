@@ -2,11 +2,14 @@ Issue:
 仅仅知道账号密码，没有专用的显示器，希望可以使用笔记本控制Jetson。Jetson本身可能没有开启ssh服务，也没有开启vnc服务。
 Solve:
 1、设法让Jetson nano联网，获取其IP地址
+
 方法一：让笔记本给nano分配IP。用网线将nano和笔记本连接，同时笔记本上“控制面板–网络和Internet–网络和共享中心”，
 看到“查看活动网络”，点击当前的网络连接，打开“WLAN状态”–属性–共享，勾选“允许其他网络用户通过本计算机的internet连接来连接”点击确定。
 这样已经连接了局域网的笔记本会自动给jetson nano分配一个静态IP地址。
 通过运行windows的命令行：Ctrl+R，进入cmd，输入：
+
 arp -a
+
 可以查看到，再插入网线并完成上面的设置后，出现了第二个“接口”，在这个“接口”列表中，找到类似于192.168.137.248之类的那一行数值，
 这个数值就是当前nano的IP地址。（注意：如果笔记本更换了连接的wifi，则可能需要重新进行一次上述过程，才能再次自动分配IP。）
 
@@ -22,7 +25,109 @@ arp -a
 输入用户名（注意：如果之前在显示器上看到的用户名是大写的，这里也应该改成小写的字母，千万要注意！！！），
 密码的输入是看不到的，输完回车即可，出现下图情况视为登陆成功：
 但是如果遇到“Access Denied”的问题，则可能有以下原因：
-1、账户密码错误：检查账户名是否全部小写了，密码有没有错误。
-2、Jetson nano的SSH服务没有开启，这时候就需要对nano进行设置，具体参考上面“1、”中的方法二，进入nano的图形化界面，
+(1)账户密码错误：检查账户名是否全部小写了，密码有没有错误。
+(2)Jetson nano的SSH服务没有开启，这时候就需要对nano进行设置，具体参考上面“1、”中的方法二，进入nano的图形化界面，
 打开终端，更改sshd_config文件，重启SSH服务（如果无法用显示器打开图形化界面，博主也暂时没有很好的办法，如果nano中没有很重要的文件，刷机或许可以）：
+# 进入终端后，输入
+
+sudo vim /etc/ssh/sshd_config
+
+输入用户名和密码，查找“# Authentication”这一部分，更改其中的“#PermitRootLogin prohibit-password”这一项。我遇到的情况是这一项被注释掉了，
+只需要在其下面加上一行：
+
+PermitRootLogin yes
+
+就可以了，注意不要加注释符号。
+之后重启SSH服务：
+
+/etc/init.d/ssh restart
+
+这样之后，再次运行putty，应该就可以了。如果还不行，可以考虑重置Ubuntu密码，并再次尝试。
+
+3、VNC
+树莓派自带的交互界面可以比较容易地完成VNC的远程配置，nano则不同，可能需要安装相关的软件。我的电脑原来已经安装过了VNC viewer，
+这里想要继续使用它来对nano进行远程操控。参考链接：https://blog.csdn.net/qq1910506668/article/details/103625478
+原来官网早已有了对该问题的讨论和解决，可以依此来进行配置。
+1、首先是软件更新，并给nano安装VNC server
+
+sudo apt update
+sudo apt install vino
+
+2、开启VNC server服务（官网的解释已经很清楚了）：
+官网讨论链接：Configuring VNC from the command-line
+
+# 官方代码：
+# Inform the system which graphic display to interact with
+export DISPLAY=:0
+# Enable the VNC server
+gsettings set org.gnome.Vino enabled true
+gsettings set org.gnome.Vino prompt-enabled false
+gsettings set org.gnome.Vino require-encryption false
+# Reboot the system so that the settings take effect
+sudo reboot
+
+但是执行到“gsettings set org.gnome.Vino enabled true”指令时报错，
+显示Vino缺少“enable”这一指令，我们可以进入下面的文件并手动加上：
+
+sudo vim /usr/share/glib-2.0/schemas/org.gnome.Vino.gschema.xml
+
+参考链接：http://baijiahao.baidu.com/s?id=1646393833889121079&wfr=spider&for=pc
+
+添加内容如下：（格式与已有的两个代码块相同即可）
+
+	<key name='enabled' type='b'>
+      <summary>Enable remote access to the desktop</summary>
+      <description>
+        If true, allows remote access to the desktop via the RFB
+        protocol. Users on remote machines may then connect to the
+        desktop using a VNC viewer.
+      </description>
+      <default>false</default>
+    </key>
+
+添加位置在文件中下面一句的后面：
+
+<schema id='org.gnome.Vino' path='/org/gnome/desktop/remote-access/'>
+
+重新编译：
+
+sudo glib-compile-schemas /usr/share/glib-2.0/schemas
+
+3、之后再次按照上面的官方代码完成VNC配置即可。
+4、我们运行VNC viewer之前，需要先登录putty，然后输入：
+
+/usr/lib/vino/vino-server --display=:0
+
+表示运行nano中的VNC软件，并等待设备0的连接。这时，我们再在电脑上运行VNC viewer，输入IP，即可完成连接。
+这是一个可能遇到的问题，如果当前jetson nano自己已有显示器进行显示，则运行上面的代码开启vnc桌面时，会出现如下的报错：
+jn@jn-desktop:~$ /usr/lib/vino/vino-server --display=:0
+No protocol specified
+Unable to init server: Could not connect: Connection refused
+Cannot open display: :0
+Run 'vino-server --help' to see a full list of available command line options
+原因是：jetson nano自己的显示器编号为0，所以现在要远程开启的新显示器的序号不能再是0了，改为1即可。
+
+/usr/lib/vino/vino-server --display=:1
+
+Jetson Nano启动后需要先登录用户的问题
+这是另外一个问题，我想要的效果是，每次只需要给jetson nano上电启动，和我的电脑用网线连接，
+就能依次用SSH和VNC-Viewer实现远程桌面访问，但是我发现，每次必须先在Jetson Nano启动后登录一个用户，
+才能在Putty中顺利执行上面的代码，否则就报错，不管display是0还是1，这就需要单独在Jetson Nano本地进行一次用户的登录，十分不便。
+对此，我的解决方法是：在Jetson nano中配置开机自动登录，
+具体可以参考：https://link.csdn.net/?target=http%3A%2F%2Fwww.linuxboy.net%2Flinuxjc%2F144712.html
+.编辑/usr/share/lightdm/lightdm.conf.d/50-ubuntu.conf,在该文件末尾添加如下两行
+
+allow-guset=false   #禁止访客用户登录
+Autologin-user=User1 #指定User1为自动登录用户
+
+.编辑完成之后,还需要修改图形桌面配置,编辑文件/etc/gdm3/custom.conf,找到[daemon]项,
+将该项的配置添加如下代码（解除对应的两行注释即可）
+
+[daemon]
+AutomaticLoginEnable=true #启用自动登录
+AutomaticLogin=User1       #指定User1用户为自动登录用户
+
+最后使用下面的指令调整屏幕分辨率：
+
+xrandr --fb 800x600
 
