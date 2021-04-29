@@ -1,0 +1,20 @@
+此教程是安装ROS教程的续篇，默认已经安装好ROS了。
+1.尝试访问cartographer官网如果可以访问，执行下一步
+https://link.csdn.net/?target=https%3A%2F%2Fgoogle-cartographer-ros.readthedocs.io%2Fen%2Flatest%2Fdata.html%23d-cartographer-backpack-deutsches-museum
+2.安装
+
+ sudo apt-get update
+ sudo apt-get install ros-melodic-cartographer*  
+ 
+ 如果出现包没下载下来，请重复上面的步骤
+ 
+ 3.测试
+下载2D数据并测试
+
+wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_2d/cartographer_paper_deutsches_museum.bag
+roslaunch cartographer_ros demo_backpack_2d.launch bag_filename:=${HOME}/Downloads/cartographer_paper_deutsches_museum.bag
+
+下载3D数据并测试
+
+wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_3d/with_intensities/b3-2016-04-05-14-14-00.bag
+roslaunch cartographer_ros demo_backpack_3d.launch bag_filename:=${HOME}/Downloads/b3-2016-04-05-14-14-00.bag
