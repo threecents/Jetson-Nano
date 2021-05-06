@@ -21,12 +21,17 @@ sudo apt-get install ros-kinetic-desktop-full
 6.开始安装
 
 sudo apt-get install ros-melodic-desktop-full
- 
+
 7.初始化操作
 
 sudo rosdep init
 rosdep update
 
+安装完ROS后，初始化指令sudo rosdep init失败，提示: sudo: rosdep:command not found
+按照以下方式解决：
+
+sudo apt install rospack-tools
+ 
 8.环境配置
 
 echo "source /opt/ros/melodic/setup.bash">> ~/.bashrc
