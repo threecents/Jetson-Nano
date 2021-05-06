@@ -1,0 +1,7 @@
+开发环境：Jetson Nano,Ubuntu 18.04,Ros系统,RPLIDAR A2激光雷达
+1.安装rplidar2
+打开终端terminal输入以下命令：
+cd ~/catkin_ws/src
+git clone https://github.com/robopeak/rplidar_ros.git
+cd …
+catkin_make
