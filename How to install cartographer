@@ -1,20 +1,71 @@
-此教程是安装ROS教程的续篇，默认已经安装好ROS了。
-1.尝试访问cartographer官网如果可以访问，执行下一步
-https://link.csdn.net/?target=https%3A%2F%2Fgoogle-cartographer-ros.readthedocs.io%2Fen%2Flatest%2Fdata.html%23d-cartographer-backpack-deutsches-museum
-2.安装
+Cartographer是Google团队17年开源的基于激光雷达的SLAM方案，适用2D和3D雷达，稳定性高，自带回环检测，也可在建图后用来做纯定位，十分好用。
+在x86平台安装Cartographer按照官方文档应该很顺利，但是对于Nvidia的产品（没错，指的就是Jetson系列），在装的时候有一些坑（主要是Protobuf安装）。
+因开发需要，在Jetson系列上安装，ROS版本为melodic，废话不多说，开整。
 
- sudo apt-get update
- sudo apt-get install ros-melodic-cartographer*  
- 
- 如果出现包没下载下来，请重复上面的步骤
- 
- 3.测试
-下载2D数据并测试
+安装依赖
+sudo apt-get update
+sudo apt-get install -y python-wstool python-rosdep ninja-build stow
+sudo apt-get install -y clang cmake g++ git google-mock libboost-all-dev libcairo2-dev libcurl4-openssl-dev libeigen3-dev \
+                          libgflags-dev libgoogle-glog-dev liblua5.2-dev libsuitesparse-dev lsb-release 
+                          
+下载Cartographer
+$ cd ~
+$ mkdir cartographer_ws
+$ cd cartographer_ws
+$ wstool init src
+$ wstool merge -t src https://raw.githubusercontent.com/googlecartographer/cartographer_ros/master/cartographer_ros.rosinstall
+$ wstool update -t src  #wstool的这一顿操作相当于git clone cartographer/cartographer_ros
 
-wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_2d/cartographer_paper_deutsches_museum.bag
-roslaunch cartographer_ros demo_backpack_2d.launch bag_filename:=${HOME}/Downloads/cartographer_paper_deutsches_museum.bag
+手动安装依赖
+安装ceres-solver
+VERSION="1.13.0"
+git clone https://github.com/ceres-solver/ceres-solver.git
+cd ceres-solver
+git checkout tags/${VERSION}
+mkdir build
+cd build
+cmake .. -G Ninja -DCXX11=ON
+ninja
+CTEST_OUTPUT_ON_FAILURE=1 ninja test
+sudo ninja install
 
-下载3D数据并测试
+安装abseil-cpp
+git clone https://github.com/abseil/abseil-cpp.git
+cd abseil-cpp
+git checkout d902eb869bcfacc1bad14933ed9af4bed006d481
+mkdir build
+cd build
+cmake -G Ninja \-DCMAKE_BUILD_TYPE=Release \-DCMAKE_POSITION_INDEPENDENT_CODE=ON \-DCMAKE_INSTALL_PREFIX=/usr/local/stow/absl \..
+ninja
+sudo ninja install
+cd /usr/local/stow
+sudo stow absl
 
-wget -P ~/Downloads https://storage.googleapis.com/cartographer-public-data/bags/backpack_3d/with_intensities/b3-2016-04-05-14-14-00.bag
-roslaunch cartographer_ros demo_backpack_3d.launch bag_filename:=${HOME}/Downloads/b3-2016-04-05-14-14-00.bag
+安装protoc3
+这里需要安装两次，先装一遍x86的
+VERSION="v3.4.1"
+git clone https://github.com/protocolbuffers/protobuf.git
+cd protobuf
+git checkout tags/${VERSION}
+mkdir build
+cd build
+cmake -G Ninja \-DCMAKE_POSITION_INDEPENDENT_CODE=ON \-DCMAKE_BUILD_TYPE=Release \-Dprotobuf_BUILD_TESTS=OFF \../cmake
+ninja
+sudo ninja install
+
+再装一遍arm的
+./autogen.sh
+./configure --host=arm-linux --with-protoc=protoc
+make
+sudo make install
+
+安装cartographer和cartographer_ros
+catkin_make_isolated --install --use-ninja
+
+按照上面步骤，再Jetson NX和Xavier上均成功安装。
+使用之前source cartographer_ws/install_isolated/setup.bash
+提示：由于安装ros的某些组件会默认安装一个版本的protobuf，如果在按照上述方法安装过程中依然提示protobuf版本不对，
+请事先手动删除/usr/local/include/google/protobuf /usr/bin/protoc这两个文件，再重新安装protobuf。
+
+
+
